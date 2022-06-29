@@ -1,0 +1,45 @@
+﻿<Window x:Class="MinecraftStateMachine.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MinecraftStateMachine"
+        mc:Ignorable="d"
+        Title="MinecraftStateMachine" Height="300" Width="400">
+    <Grid Background="Silver">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="104"/>
+            <RowDefinition Height="170*"/>
+        </Grid.RowDefinitions>
+        <TabControl HorizontalAlignment="Stretch" Margin="0,0,0,6" VerticalAlignment="Stretch" Grid.Row="0">
+            <TabItem Header="Main">
+                <Grid Background="Silver">
+                    <Button x:Name="btnGenerate" Content="Build Solution" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="86" Click="BtnGenerate_Click"/>
+                    <TextBox x:Name="txtFile" HorizontalAlignment="Stretch" Height="23" TextWrapping="NoWrap" Text="main.txt" VerticalAlignment="Top" Margin="10,10,10,0"/>
+                    <Button x:Name="btnGetStates" Content="Read States" HorizontalAlignment="Left" VerticalAlignment="Top" Width="75" Margin="101,38,0,0" Click="BtnGetStates_Click"/>
+
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="tabHelp" Header="Helper">
+                <Grid Background="Silver">
+                    <TextBox x:Name="txtCommand" HorizontalAlignment="Stretch" Margin="10,10,10,36" AcceptsReturn="True" TextWrapping="Wrap" Text="" VerticalAlignment="Stretch" PreviewTextInput="txtCommand_PreviewTextInput" TextChanged="txtCommand_TextChanged" TabIndex="0"/>
+                    <Label Focusable="True" TabIndex="1" IsTabStop="True" GotFocus="BtnHelp_Click" Width="0" Height="0" VerticalAlignment="Top"/>
+                    <Button x:Name="btnHelp" Content="Help" HorizontalAlignment="Left" Margin="10,0,0,10" Width="75" Click="BtnHelp_Click" Height="20" VerticalAlignment="Bottom" />
+                    <Button x:Name="btnParse" Content="Parse" HorizontalAlignment="Left" Margin="90,0,0,10" Width="75" Click="BtnParse_Click" Height="20" VerticalAlignment="Bottom"/>
+                    <CheckBox x:Name="chkMonospaced" Content="Monospaced" HorizontalAlignment="Left" Margin="170,0,0,12" Height="15" VerticalAlignment="Bottom" Checked="chkMonospaced_Checked" Unchecked="chkMonospaced_Checked"/>
+                    <CheckBox x:Name="chkTabHelps" Content="Tab helps" HorizontalAlignment="Left" Margin="268,0,0,12" Height="15" VerticalAlignment="Bottom" Checked="chkTabHelps_Checked" Unchecked="chkTabHelps_Checked" IsChecked="True"/>
+
+                </Grid>
+            </TabItem>
+            <TabItem x:Name="tabBuilder" Header="Builder GUI">
+                <Grid Background="Silver">
+                    <Button Content="Builder" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <GridSplitter Grid.Row="0" Height="4" ResizeBehavior="CurrentAndNext" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" ResizeDirection="Rows" BorderThickness="1" BorderBrush="#FF707070" Background="#FFE3E3E3"/>
+        <ListBox x:Name="lstOutput" HorizontalAlignment="Stretch" Margin="10,6.194,10,10" VerticalAlignment="Stretch" SelectionChanged="LstOutput_SelectionChanged" Grid.Row="1"/>
+
+    </Grid>
+</Window>
