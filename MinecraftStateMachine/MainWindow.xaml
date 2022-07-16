@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MinecraftStateMachine"
         mc:Ignorable="d"
-        Title="MinecraftStateMachine" Height="300" Width="400">
+        Title="MinecraftStateMachine" Height="300" Width="400" Closing="Window_Closing">
     <Grid Background="Silver">
         <Grid.RowDefinitions>
             <RowDefinition Height="104"/>
             <RowDefinition Height="170*"/>
         </Grid.RowDefinitions>
-        <TabControl HorizontalAlignment="Stretch" Margin="0,0,0,6" VerticalAlignment="Stretch" Grid.Row="0">
+        <TabControl HorizontalAlignment="Stretch" Margin="0,0,0,6" VerticalAlignment="Stretch" Grid.Row="0" SelectionChanged="TabControl_SelectionChanged">
             <TabItem Header="Main">
                 <Grid Background="Silver">
                     <Button x:Name="btnGenerate" Content="Build Solution" HorizontalAlignment="Left" Margin="10,38,0,0" VerticalAlignment="Top" Width="86" Click="BtnGenerate_Click"/>
@@ -34,6 +34,7 @@
             <TabItem x:Name="tabBuilder" Header="Builder GUI">
                 <Grid Background="Silver">
                     <Button Content="Builder" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
+                    <ComboBox x:Name="cboFilePick" HorizontalAlignment="Left" VerticalAlignment="Top" Width="103" Margin="109,10,0,0"/>
 
                 </Grid>
             </TabItem>

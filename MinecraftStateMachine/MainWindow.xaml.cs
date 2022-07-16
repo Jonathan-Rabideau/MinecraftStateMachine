@@ -41,12 +41,24 @@ namespace MinecraftStateMachine
         public List<string> globalStates_;
         public List<int> silentStates_;
 
+        public List<string> fileTemp;
+        public List<string> triggerTemp;
+        public List<int> triggerStart;
+        public List<int> triggerEnd;
+
         public MainWindow() {
             InitializeComponent();
-            ConsoleChat.consoleChat = new ConsoleChat {// CHECK THAT WEIRD COLON BUG AND DEFINE TYPE FORMS!!!!!!
+            ConsoleChat.consoleChat = new ConsoleChat {
                 lstOutput = lstOutput
             };
             Console.SetOut(ConsoleChat.consoleChat);
+
+            globalStates_ = new List<string>();
+            silentStates_ = new List<int>();
+            fileTemp = new List<string>();
+            triggerTemp = new List<string>();
+            triggerStart = new List<int>();
+            triggerEnd = new List<int>();
 
             Func<string, string, object, object>[] type_parsers_list = new Func<string, string, object, object>[] {
                 (o, s, c) => { // stateCheck and Assign
@@ -86,11 +98,6 @@ namespace MinecraftStateMachine
                     return new dialogue() { msg=(string)data[0], color=(string)data[1], replies=(reply[])data[2], causual=((string)data[3])[0]=='t', condition = (stateV[])data[5] };
                 }
             };
-            string safeSubString(string str, int s, int l) {
-                if(s < 0 || s >= str.Length || s + l > str.Length || l == 0) return "0";
-                else if(l == -1) return str.Substring(s);
-                else return str.Substring(s, l);
-            }
 
             parser = new ArgumentParser(true);
 
@@ -250,100 +257,127 @@ namespace MinecraftStateMachine
             txtCommand.Focus();
         }
 
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+            if(builder != null && builder.IsActive) {
+                builder.Close();
+                if(builder.HasChanges) e.Cancel = true;
+            }
+        }
+
         #region ArgumentBuilder
+        private void TabControl_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            if((sender as TabControl).SelectedItem == tabBuilder) {
+                cboFilePick.ItemsSource = txtFile.Text.Split(',');
+                cboFilePick.SelectedIndex = 0;
+            }
+        }
+
         private bool saveCallback(string[] lines) {
-            //StreamWriter file = File.CreateText(txtFile.Text.Split(',')[0]);
+            string[] names = new string[lines.Length];
+            for(int j = 0; j<lines.Length; j++) names[j] = safeSubString(lines[j], 0, lines[j].IndexOf(' '));
+            for(int i=triggerTemp.Count-1; i>=0; i--) {
+                for(int j=lines.Length-1; j>=0; j--) {
+                    if(names[j] == triggerTemp[i]) {
+                        fileTemp.Insert(triggerStart[i], lines[j]);
+                        names[j] = null;
+                        lines[j] = null;
+                        break;
+                    }
+                }
+            }
+
+            StreamWriter file = File.CreateText(cboFilePick.SelectedItem.ToString());
+            foreach(string s in fileTemp) file.WriteLine(s);
+            foreach(string s in lines) if(s != null) file.WriteLine(s);
+            file.Close();
 
             return true;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e_) {
-
-            lstOutput.Items.Clear(); parser.resetHelp();
-
-            List<string> states = new List<string>();
+            BtnGetStates_Click(null, null);
+            fileTemp.Clear();
+            triggerTemp.Clear();
+            triggerEnd.Clear();
+            triggerStart.Clear();
 
             List<string> triggers = new List<string>();
 
-            globalStates_ = new List<string>();
-            silentStates_ = new List<int>();
-
-            int line = 0;
-            int fileNum = 0;
+            int line = 0, oldLine = 0;
             string fileName = null;
             StreamReader file = null;
             StreamWriter output = File.CreateText("backup.txt");
-            int openFile = 0;
+            bool endsWithTrigger = false;
 
             try {
                 version();
-                fileName = txtFile.Text.Split(',')[openFile];
-                fileNum++;
-                line = 0;
+                fileName = cboFilePick.SelectedItem.ToString();
 
                 file = File.OpenText(fileName);
-                int readingState = 0;
-                if(openFile != 0) readingState = 10;
                 string next;
+                int readingState = 0;
+                if(cboFilePick.SelectedIndex != 0) readingState = 10;
 
                 next = getNext(file, ref readingState, ref line);
                 while(next != "") {
-                    if(readingState == 10) {
-                        int ind = next.IndexOf(' ');
-                        if(ind == -1) ind = next.Length;
-                        states.Add(next.Substring(0, ind));
-                    }
-                    else if(readingState == 11) {
+                    if(readingState == 11) {
                         output.WriteLine(next);
                         triggers.Add(next);
+                        endsWithTrigger = true;
+                        triggerTemp.Add(safeSubString(next, 0, next.IndexOf(' ')));
+                        triggerStart.Add(line);
                     }
+                    else endsWithTrigger = false;
+                    oldLine = line;
                     next = getNext(file, ref readingState, ref line);
+                    if(triggerStart.Count != triggerEnd.Count) triggerEnd.Add(line);
                 }
-                file.Close();
                 output.Close();
-                line = 0;
-
-                parser.updateLiteralList("(states)", states.ToArray());
 
                 for(int i=0; i<triggers.Count; i++) {
                     string s = parser.verifyCommand(triggers[i]);
                     if(s != null) throw new Exception(s);
                 }
 
-                lstOutput.Items.Add("Found "+states.Count+" state"+(states.Count==1 ? "" : "s")+" and "
-                    + triggers.Count+" trigger"+(triggers.Count==1 ? "" : "s")+" in " + fileName+".");
-                lstOutput.Items.Add("Launching BuilderWindow");
+                lstOutput.Items.Add("Launching BuilderWindow for " + fileName + "...");
 
+                line = 0;
+                file.BaseStream.Position = 0;
+                int at = 0;
+                while(!file.EndOfStream) {
+                    next = file.ReadLine();
+                    line++;
+                    if(line == triggerEnd[at]) at++;
+                    if(at < triggerTemp.Count && line == triggerStart[at]) triggerStart[at] = fileTemp.Count;
+                    if(at < triggerTemp.Count && line >= triggerStart[at]) {
+                        if(next.Length == 0 || next[0] == '#' || (next.Length > 1 && next.StartsWith("//")))
+                            fileTemp.Add(next);
+                    }
+                    else fileTemp.Add(next);
+                }
+                file.Close();
+                if(!endsWithTrigger) fileTemp.Add("#@triggers: autogenerated");
 
                 builder = new BuilderWindow(parser, format, false, triggers.ToArray(), saveCallback, null);
 
                 this.Hide();
                 builder.ShowDialog();
                 this.Show();
+                builder = null;
+                lstOutput.Items.Add("BuilderWindow closed");
             }
             catch(Exception e) {
                 if(file != null) file.Close();
                 if(output != null) output.Close();
-                string location = null;
-                if(fileName != null) {
-                    location = "Error in file "+fileName;
-                    if(line != 0) location += " at line " + line;
-                }
-                if(location != null) lstOutput.Items.Add(location);
+                string location = "Error in file "+fileName;
+                if(line != 0) location += " at line "+line;
+                if(!this.IsActive) this.Show();
+                lstOutput.Items.Add(location);
                 lstOutput.Items.Add(e.Message);
-                lstOutput.Items.Add(e.StackTrace);
                 if(e.InnerException != null && e.InnerException.Message != "") {
                     lstOutput.Items.Add(" Inner exception: ");
                     lstOutput.Items.Add(e.InnerException.Message);
                     lstOutput.Items.Add(e.InnerException.StackTrace);
-                    Exception eee = e.InnerException;
-                    int ei = 1;
-                    while(eee.InnerException != null && eee.Message != null) {
-                        eee = eee.InnerException; ei++;
-                        lstOutput.Items.Add("  Inner exception"+ei+": ");
-                        lstOutput.Items.Add(eee.Message);
-                        lstOutput.Items.Add(eee.StackTrace);
-                    }
                 }
             }
             temp = null;
@@ -424,7 +458,7 @@ namespace MinecraftStateMachine
             List<string> states = new List<string>();
             List<string> states_type = new List<string>();
 
-            globalStates_ = new List<string>();
+            globalStates_.Clear();
 
             int line = 0, fileNum=0;
             string[] files = null;
@@ -483,8 +517,8 @@ namespace MinecraftStateMachine
 
             List<trigger> triggers = new List<trigger>();
 
-            globalStates_ = new List<string>();
-            silentStates_ = new List<int>();
+            globalStates_.Clear();
+            silentStates_.Clear();
 
             int line=0;
             int fileNum = 0;
@@ -944,6 +978,12 @@ namespace MinecraftStateMachine
             if(str.Contains("~") || str.Contains("^") || str.Contains("sort=")) return "execute as " + replace + " at @s run " + str;
             else if(str.Contains("@s")) return str.Replace(find, replace);
             else return "execute as " + replace + " run " + str;
+        }
+
+        public static string safeSubString(string str, int s, int l) {
+            if(s < 0 || s >= str.Length || s + l > str.Length || l == 0) return "0";
+            else if(l == -1) return str.Substring(s);
+            else return str.Substring(s, l);
         }
     }
 }
